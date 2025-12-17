@@ -1,0 +1,181 @@
+openapi: 3.0.0
+info:
+  title: LogiFlow API - Delivery Orders Service
+  version: 1.0.0
+  description: Servicio de gestión de pedidos de entrega para LogiFlow
+
+servers:
+  - url: http://localhost:8080
+    description: Servidor local
+
+paths:
+  /api/pedidos:
+    post:
+      summary: Crear nuevo pedido de entrega
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerId:
+                  type: integer
+                  example: 1
+                origin:
+                  type: string
+                  example: "Quito, Pichincha"
+                destination:
+                  type: string
+                  example: "Ambato, Tungurahua"
+                deliveryType:
+                  type: string
+                  enum: [URBAN_RAPID, INTERMUNICIPAL, NATIONAL]
+                  example: INTERMUNICIPAL
+                weight:
+                  type: integer
+                  example: 5
+                zone:
+                  type: string
+                  example: "QUITO NORTE"
+                notes:
+                  type: string
+                  example: "Entregar en horario de oficina"
+              required: [customerId, origin, destination, deliveryType, weight, zone]
+      responses:
+        '201':
+          description: Pedido creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryOrderResponse'
+        '400':
+          description: Datos inválidos
+        '401':
+          description: No autenticado
+
+  /api/pedidos/{id}:
+    get:
+      summary: Obtener pedido por ID
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryOrderResponse'
+        '404':
+          description: Pedido no encontrado
+
+  /api/pedidos/cliente/{customerId}:
+    get:
+      summary: Obtener pedidos de un cliente
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de pedidos del cliente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryOrderResponse'
+
+  /api/pedidos/{id}/estado:
+    patch:
+      summary: Actualizar estado del pedido
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [RECEIVED, CONFIRMED, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED]
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryOrderResponse'
+
+components:
+  schemas:
+    DeliveryOrderResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        orderNumber:
+          type: string
+          example: "ORD-ABC12345"
+        customerId:
+          type: integer
+          example: 1
+        origin:
+          type: string
+          example: "Quito, Pichincha"
+        destination:
+          type: string
+          example: "Ambato, Tungurahua"
+        deliveryType:
+          type: string
+          example: INTERMUNICIPAL
+        weight:
+          type: integer
+          example: 5
+        status:
+          type: string
+          example: RECEIVED
+        zone:
+          type: string
+          example: "QUITO NORTE"
+        estimatedCost:
+          type: number
+          format: decimal
+          example: 7.50
+        createdAt:
+          type: integer
+          example: 1703088000000
+        updatedAt:
+          type: integer
+          example: 1703088000000
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

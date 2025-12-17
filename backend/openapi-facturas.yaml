@@ -1,0 +1,269 @@
+openapi: 3.0.3
+info:
+  title: Servicio de Facturación - LogiFlow
+  description: API REST para gestionar facturas y facturación de entregas
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api/facturas
+    description: Servidor de desarrollo
+
+paths:
+  /:
+    post:
+      summary: Crear factura
+      description: Crea una nueva factura para un pedido de entrega
+      tags:
+        - Facturas
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idPedidoEntrega
+                - idCliente
+                - subtotal
+              properties:
+                idPedidoEntrega:
+                  type: integer
+                  format: int64
+                  example: 1
+                idCliente:
+                  type: integer
+                  format: int64
+                  example: 1
+                subtotal:
+                  type: number
+                  format: double
+                  minimum: 0
+                  example: 50.00
+                impuesto:
+                  type: number
+                  format: double
+                  minimum: 0
+                  example: 5.00
+                descripcion:
+                  type: string
+                  example: "Factura por entrega a Ambato"
+      responses:
+        '201':
+          description: Factura creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaFactura'
+        '400':
+          description: Datos inválidos
+        '401':
+          description: No autorizado
+
+  /{id}:
+    get:
+      summary: Obtener factura por ID
+      description: Recupera los detalles de una factura específica
+      tags:
+        - Facturas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Factura encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaFactura'
+        '404':
+          description: Factura no encontrada
+        '401':
+          description: No autorizado
+
+  /numero/{numeroFactura}:
+    get:
+      summary: Obtener factura por número
+      description: Busca una factura usando su número único
+      tags:
+        - Facturas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: numeroFactura
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "FAC-2025-00001"
+      responses:
+        '200':
+          description: Factura encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaFactura'
+        '404':
+          description: Factura no encontrada
+
+  /cliente/{idCliente}:
+    get:
+      summary: Obtener facturas de un cliente
+      description: Recupera todas las facturas asociadas a un cliente
+      tags:
+        - Facturas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: idCliente
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Lista de facturas del cliente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaFactura'
+
+  /pedido/{idPedido}:
+    get:
+      summary: Obtener facturas de un pedido
+      description: Recupera las facturas asociadas a un pedido específico
+      tags:
+        - Facturas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: idPedido
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Lista de facturas del pedido
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaFactura'
+
+  /{id}/estado:
+    patch:
+      summary: Actualizar estado de factura
+      description: Cambia el estado de una factura
+      tags:
+        - Facturas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: estado
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [BORRADOR, EMITIDA, PAGADA, CANCELADA]
+          example: PAGADA
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaFactura'
+        '404':
+          description: Factura no encontrada
+        '400':
+          description: Transición de estado no válida
+
+components:
+  schemas:
+    RespuestaFactura:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        numeroFactura:
+          type: string
+          example: "FAC-2025-00001"
+        idPedidoEntrega:
+          type: integer
+          format: int64
+          example: 1
+        idCliente:
+          type: integer
+          format: int64
+          example: 1
+        estado:
+          type: string
+          enum: [BORRADOR, EMITIDA, PAGADA, CANCELADA]
+          example: EMITIDA
+        subtotal:
+          type: number
+          format: double
+          example: 50.00
+        impuesto:
+          type: number
+          format: double
+          example: 5.00
+        total:
+          type: number
+          format: double
+          example: 55.00
+        descripcion:
+          type: string
+          example: "Factura por entrega a Ambato"
+        fechaCreacion:
+          type: string
+          format: date-time
+          example: "2025-12-16T18:08:22"
+        fechaActualizacion:
+          type: string
+          format: date-time
+          example: "2025-12-16T18:08:22"
+
+    Error:
+      type: object
+      properties:
+        codigo:
+          type: string
+          example: "FACTURA_001"
+        mensaje:
+          type: string
+          example: "Factura no encontrada"
+        timestamp:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido al iniciar sesión

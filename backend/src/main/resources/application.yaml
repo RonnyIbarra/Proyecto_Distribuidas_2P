@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: LogiFlow
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+    show-sql: false
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  flyway:
+    enabled: false
+
+app:
+  jwt:
+    secret: MySecretKeyForJWTTokenGenerationAndValidationWithMinimumLengthOfThirtyTwoCharacters
+    expiration: 86400000
+    refresh-expiration: 604800000
+
+logging:
+  level:
+    root: INFO
+    com.logiflow.backend: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+# Configuración de API Gateway (comentada si se ejecuta como servicio individual)
+# spring:
+#   cloud:
+#     gateway:
+#       routes:
+#         - id: autenticacion
+#           uri: http://localhost:8080
+#           predicates:
+#             - Path=/api/autenticacion/**
+#           filters:
+#             - StripPrefix=0
+#         - id: pedidos-entrega
+#           uri: http://localhost:8080
+#           predicates:
+#             - Path=/api/pedidos/**
+#           filters:
+#             - StripPrefix=0
+#         - id: flota
+#           uri: http://localhost:8080
+#           predicates:
+#             - Path=/api/flota/**
+#           filters:
+#             - StripPrefix=0
+#         - id: facturas
+#           uri: http://localhost:8080
+#           predicates:
+#             - Path=/api/facturas/**
+#           filters:
+#             - StripPrefix=0
+#       default-filters:
+#         - name: LimitadorTasas
+#           args:
+#             redis-rate-limiter:
+#               replenish-rate: 100
+#               burst-capacity: 100
+#         - name: RequestLogging

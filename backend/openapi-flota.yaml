@@ -1,0 +1,284 @@
+openapi: 3.0.3
+info:
+  title: Servicio de Gestión de Flota - LogiFlow
+  description: API REST para gestionar vehículos y disponibilidad
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api/fleet
+    description: Servidor de desarrollo
+
+paths:
+  /vehicles:
+    post:
+      summary: Crear vehículo
+      description: Registra un nuevo vehículo en la flota
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - placa
+                - tipo
+                - capacidad
+                - costoPorKm
+                - propietarioId
+              properties:
+                placa:
+                  type: string
+                  example: "PEC-1234"
+                tipo:
+                  type: string
+                  enum: [MOTOCICLETA, VEHICULO_LIVIANO, CAMION_MEDIANO, CAMION_PESADO]
+                  example: VEHICULO_LIVIANO
+                capacidad:
+                  type: integer
+                  minimum: 1
+                  example: 100
+                costoPorKm:
+                  type: number
+                  format: double
+                  example: 2.50
+                propietarioId:
+                  type: integer
+                  format: int64
+                  example: 1
+      responses:
+        '201':
+          description: Vehículo creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaVehiculo'
+        '400':
+          description: Datos inválidos o placa duplicada
+        '401':
+          description: No autorizado
+
+  /vehicles/{id}:
+    get:
+      summary: Obtener vehículo por ID
+      description: Recupera los detalles de un vehículo específico
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Vehículo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaVehiculo'
+        '404':
+          description: Vehículo no encontrado
+
+  /vehicles/placa/{placa}:
+    get:
+      summary: Obtener vehículo por placa
+      description: Busca un vehículo usando su placa
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: placa
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "PEC-1234"
+      responses:
+        '200':
+          description: Vehículo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaVehiculo'
+        '404':
+          description: Vehículo no encontrado
+
+  /vehicles/propietario/{idPropietario}:
+    get:
+      summary: Obtener vehículos por propietario
+      description: Recupera todos los vehículos de un propietario específico
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: idPropietario
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Lista de vehículos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaVehiculo'
+
+  /vehicles/disponibles:
+    get:
+      summary: Obtener vehículos disponibles
+      description: Recupera todos los vehículos disponibles para asignar
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de vehículos disponibles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaVehiculo'
+
+  /vehicles/tipo/{tipo}:
+    get:
+      summary: Obtener vehículos por tipo
+      description: Filtra vehículos por tipo específico
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tipo
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [MOTOCICLETA, VEHICULO_LIVIANO, CAMION_MEDIANO, CAMION_PESADO]
+          example: VEHICULO_LIVIANO
+      responses:
+        '200':
+          description: Lista de vehículos por tipo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaVehiculo'
+
+  /vehicles/{id}/estado:
+    patch:
+      summary: Actualizar estado del vehículo
+      description: Cambia el estado de disponibilidad de un vehículo
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: estado
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [DISPONIBLE, EN_RUTA, MANTENIMIENTO]
+          example: EN_RUTA
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaVehiculo'
+        '404':
+          description: Vehículo no encontrado
+
+  /vehicles/{id}:
+    delete:
+      summary: Eliminar vehículo
+      description: Elimina un vehículo del sistema
+      tags:
+        - Vehículos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '204':
+          description: Vehículo eliminado exitosamente
+        '404':
+          description: Vehículo no encontrado
+
+components:
+  schemas:
+    RespuestaVehiculo:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        placa:
+          type: string
+          example: "PEC-1234"
+        tipo:
+          type: string
+          enum: [MOTOCICLETA, VEHICULO_LIVIANO, CAMION_MEDIANO, CAMION_PESADO]
+          example: VEHICULO_LIVIANO
+        capacidad:
+          type: integer
+          example: 100
+        estado:
+          type: string
+          enum: [DISPONIBLE, EN_RUTA, MANTENIMIENTO]
+          example: DISPONIBLE
+        costoPorKm:
+          type: number
+          format: double
+          example: 2.50
+        propietarioId:
+          type: integer
+          format: int64
+          example: 1
+        fechaCreacion:
+          type: string
+          format: date-time
+          example: "2025-12-16T18:08:22"
+        fechaActualizacion:
+          type: string
+          format: date-time
+          example: "2025-12-16T18:08:22"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido al iniciar sesión

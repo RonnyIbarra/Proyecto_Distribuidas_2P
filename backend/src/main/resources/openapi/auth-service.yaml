@@ -1,0 +1,169 @@
+openapi: 3.0.0
+info:
+  title: LogiFlow API - Authentication Service
+  version: 1.0.0
+  description: Servicio de autenticación y gestión de usuarios para LogiFlow
+
+servers:
+  - url: http://localhost:8080
+    description: Servidor local
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Registrar nuevo usuario
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: usuario@example.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: password123
+                fullName:
+                  type: string
+                  example: Juan Pérez
+                phoneNumber:
+                  type: string
+                  example: "0987654321"
+                role:
+                  type: string
+                  enum: [CLIENTE, REPARTIDOR, SUPERVISOR, GERENTE, ADMIN]
+                  example: CLIENTE
+              required: [email, password, fullName, phoneNumber, role]
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Datos inválidos o email ya registrado
+
+  /api/auth/login:
+    post:
+      summary: Autenticar usuario
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: usuario@example.com
+                password:
+                  type: string
+                  example: password123
+              required: [email, password]
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Credenciales inválidas
+
+  /api/auth/token/refresh:
+    post:
+      summary: Renovar access token
+      tags:
+        - Autenticación
+      parameters:
+        - name: refreshToken
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token renovado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Token inválido
+
+  /api/auth/validate:
+    get:
+      summary: Validar token JWT
+      tags:
+        - Autenticación
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Validación completada
+          content:
+            application/json:
+              schema:
+                type: boolean
+
+components:
+  schemas:
+    AuthTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expiresIn:
+          type: integer
+          example: 86400
+        tokenType:
+          type: string
+          example: Bearer
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          example: usuario@example.com
+        fullName:
+          type: string
+          example: Juan Pérez
+        phoneNumber:
+          type: string
+          example: "0987654321"
+        role:
+          type: string
+          example: CLIENTE
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: integer
+          example: 1703088000000
+        updatedAt:
+          type: integer
+          example: 1703088000000

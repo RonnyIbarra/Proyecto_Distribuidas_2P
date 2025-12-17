@@ -1,0 +1,383 @@
+openapi: 3.0.3
+info:
+  title: Servicio de Gestión de Pedidos - LogiFlow
+  description: API REST para crear y gestionar pedidos de entrega
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api/pedidos
+    description: Servidor de desarrollo
+
+paths:
+  /:
+    post:
+      summary: Crear pedido de entrega
+      description: Crea un nuevo pedido de entrega con validación de zona y tipo
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idCliente
+                - origen
+                - destino
+                - tipoEntrega
+                - peso
+                - zona
+              properties:
+                idCliente:
+                  type: integer
+                  format: int64
+                  example: 1
+                origen:
+                  type: string
+                  example: "Quito, Pichincha"
+                destino:
+                  type: string
+                  example: "Ambato, Tungurahua"
+                tipoEntrega:
+                  type: string
+                  enum: [ENTREGA_URBANA_RAPIDA, ENTREGA_INTERMUNICIPAL, ENTREGA_NACIONAL]
+                  example: ENTREGA_INTERMUNICIPAL
+                peso:
+                  type: integer
+                  minimum: 1
+                  example: 5
+                zona:
+                  type: string
+                  enum: [QUITO_NORTE, QUITO_CENTRO, QUITO_SUR, QUITO_VALLE, AMBATO, LATACUNGA, PICHINCHA]
+                  example: QUITO_NORTE
+                notas:
+                  type: string
+                  example: "Entregar en horario de oficina"
+      responses:
+        '201':
+          description: Pedido creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPedidoEntrega'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: No autorizado
+
+  /{id}:
+    get:
+      summary: Obtener pedido por ID
+      description: Recupera los detalles de un pedido específico
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPedidoEntrega'
+        '404':
+          description: Pedido no encontrado
+        '401':
+          description: No autorizado
+
+  /numero/{numeroPedido}:
+    get:
+      summary: Obtener pedido por número
+      description: Recupera un pedido usando su número único
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: numeroPedido
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "PED-2025-00001"
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPedidoEntrega'
+        '404':
+          description: Pedido no encontrado
+
+  /cliente/{idCliente}:
+    get:
+      summary: Obtener pedidos de un cliente
+      description: Recupera todos los pedidos asociados a un cliente
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: idCliente
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Lista de pedidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaPedidoEntrega'
+
+  /zona/{zona}:
+    get:
+      summary: Obtener pedidos por zona
+      description: Recupera pedidos de una zona específica
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zona
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [QUITO_NORTE, QUITO_CENTRO, QUITO_SUR, QUITO_VALLE, AMBATO, LATACUNGA, PICHINCHA]
+          example: QUITO_NORTE
+      responses:
+        '200':
+          description: Lista de pedidos por zona
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaPedidoEntrega'
+
+  /estado/{estado}:
+    get:
+      summary: Obtener pedidos por estado
+      description: Recupera pedidos con un estado específico
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: estado
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [RECIBIDO, CONFIRMADO, ASIGNADO, EN_TRANSITO, ENTREGADO, CANCELADO]
+          example: EN_TRANSITO
+      responses:
+        '200':
+          description: Lista de pedidos por estado
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RespuestaPedidoEntrega'
+
+  /{id}/estado:
+    patch:
+      summary: Actualizar estado del pedido
+      description: Cambia el estado de un pedido
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: estado
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [RECIBIDO, CONFIRMADO, ASIGNADO, EN_TRANSITO, ENTREGADO, CANCELADO]
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPedidoEntrega'
+        '404':
+          description: Pedido no encontrado
+
+  /{id}/asignar:
+    patch:
+      summary: Asignar repartidor a pedido
+      description: Asigna un repartidor y vehículo a un pedido
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: idRepartidor
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 2
+        - name: idVehiculo
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 3
+      responses:
+        '200':
+          description: Repartidor asignado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPedidoEntrega'
+        '400':
+          description: Repartidor o vehículo no disponible
+
+  /{id}/cancelar:
+    patch:
+      summary: Cancelar pedido
+      description: Cancela un pedido que aún no ha sido entregado
+      tags:
+        - Pedidos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Pedido cancelado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaPedidoEntrega'
+        '400':
+          description: Pedido no puede ser cancelado en este estado
+
+components:
+  schemas:
+    RespuestaPedidoEntrega:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        numeroPedido:
+          type: string
+          example: "PED-2025-00001"
+        idCliente:
+          type: integer
+          format: int64
+          example: 1
+        origen:
+          type: string
+          example: "Quito, Pichincha"
+        destino:
+          type: string
+          example: "Ambato, Tungurahua"
+        tipoEntrega:
+          type: string
+          enum: [ENTREGA_URBANA_RAPIDA, ENTREGA_INTERMUNICIPAL, ENTREGA_NACIONAL]
+          example: ENTREGA_INTERMUNICIPAL
+        peso:
+          type: integer
+          example: 5
+        estado:
+          type: string
+          enum: [RECIBIDO, CONFIRMADO, ASIGNADO, EN_TRANSITO, ENTREGADO, CANCELADO]
+          example: EN_TRANSITO
+        idRepartidorAsignado:
+          type: integer
+          format: int64
+          nullable: true
+          example: 2
+        idVehiculoAsignado:
+          type: integer
+          format: int64
+          nullable: true
+          example: 3
+        zona:
+          type: string
+          example: QUITO_NORTE
+        costEstimado:
+          type: number
+          format: double
+          example: 7.50
+        notas:
+          type: string
+          example: "Entregar en horario de oficina"
+        fechaCreacion:
+          type: string
+          format: date-time
+          example: "2025-12-16T18:08:22"
+        fechaActualizacion:
+          type: string
+          format: date-time
+          example: "2025-12-16T18:08:22"
+
+    Error:
+      type: object
+      properties:
+        codigo:
+          type: string
+          example: "PEDIDO_001"
+        mensaje:
+          type: string
+          example: "Zona de entrega no válida"
+        timestamp:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido al iniciar sesión
